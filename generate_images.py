@@ -35,6 +35,9 @@ async def generate_overview(s: Stats) -> None:
     with open("templates/overview.svg", "r") as f:
         output = f.read()
 
+    # Add transparency to the SVG root element
+    output = re.sub("<svg", '<svg style="background: transparent;"', output)
+
     output = re.sub("{{ name }}", await s.name, output)
     output = re.sub("{{ stars }}", f"{await s.stargazers:,}", output)
     output = re.sub("{{ forks }}", f"{await s.forks:,}", output)
@@ -57,6 +60,9 @@ async def generate_languages(s: Stats) -> None:
     with open("templates/languages.svg", "r") as f:
         output = f.read()
 
+    # Add transparency to the SVG root element
+    output = re.sub("<svg", '<svg style="background: transparent;"', output)
+
     progress = ""
     lang_list = ""
     sorted_languages = sorted(
@@ -66,6 +72,12 @@ async def generate_languages(s: Stats) -> None:
     for i, (lang, data) in enumerate(sorted_languages):
         color = data.get("color")
         color = color if color is not None else "#000000"
+        # Convert hex color to rgba for transparency
+        if color.startswith('#'):
+            r = int(color[1:3], 16)
+            g = int(color[3:5], 16)
+            b = int(color[5:7], 16)
+            color = f"rgba({r}, {g}, {b}, 0.8)"  # 0.8 opacity for slight transparency
         progress += (
             f'<span style="background-color: {color};'
             f'width: {data.get("prop", 0):0.3f}%;" '
@@ -114,7 +126,6 @@ async def main() -> None:
     excluded_langs = (
         {x.strip() for x in exclude_langs.split(",")} if exclude_langs else None
     )
-    # Convert a truthy value to a Boolean
     raw_ignore_forked_repos = os.getenv("EXCLUDE_FORKED_REPOS")
     ignore_forked_repos = (
         not not raw_ignore_forked_repos
