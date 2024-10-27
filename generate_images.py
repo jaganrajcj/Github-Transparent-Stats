@@ -9,22 +9,12 @@ import aiohttp
 from github_stats import Stats
 
 
-################################################################################
-# Helper Functions
-################################################################################
-
-
 def generate_output_folder() -> None:
     """
     Create the output folder if it does not already exist
     """
     if not os.path.isdir("generated"):
         os.mkdir("generated")
-
-
-################################################################################
-# Individual Image Generation Functions
-################################################################################
 
 
 async def generate_overview(s: Stats) -> None:
@@ -35,8 +25,9 @@ async def generate_overview(s: Stats) -> None:
     with open("templates/overview.svg", "r") as f:
         output = f.read()
 
-    # Add transparency to the SVG root element
-    output = re.sub("<svg", '<svg style="background: transparent;"', output)
+    # Ensure background is transparent
+    output = re.sub(r'fill="#[0-9a-fA-F]+"', 'fill="#00000000"', output)
+    output = re.sub(r'background-color: #[0-9a-fA-F]+', 'background-color: #00000000', output)
 
     output = re.sub("{{ name }}", await s.name, output)
     output = re.sub("{{ stars }}", f"{await s.stargazers:,}", output)
@@ -60,8 +51,9 @@ async def generate_languages(s: Stats) -> None:
     with open("templates/languages.svg", "r") as f:
         output = f.read()
 
-    # Add transparency to the SVG root element
-    output = re.sub("<svg", '<svg style="background: transparent;"', output)
+    # Ensure background is transparent
+    output = re.sub(r'fill="#[0-9a-fA-F]+"', 'fill="#00000000"', output)
+    output = re.sub(r'background-color: #[0-9a-fA-F]+', 'background-color: #00000000', output)
 
     progress = ""
     lang_list = ""
@@ -72,12 +64,6 @@ async def generate_languages(s: Stats) -> None:
     for i, (lang, data) in enumerate(sorted_languages):
         color = data.get("color")
         color = color if color is not None else "#000000"
-        # Convert hex color to rgba for transparency
-        if color.startswith('#'):
-            r = int(color[1:3], 16)
-            g = int(color[3:5], 16)
-            b = int(color[5:7], 16)
-            color = f"rgba({r}, {g}, {b}, 0.8)"  # 0.8 opacity for slight transparency
         progress += (
             f'<span style="background-color: {color};'
             f'width: {data.get("prop", 0):0.3f}%;" '
@@ -102,18 +88,12 @@ fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8z"></path></svg>
         f.write(output)
 
 
-################################################################################
-# Main Function
-################################################################################
-
-
 async def main() -> None:
     """
     Generate all badges
     """
     access_token = os.getenv("ACCESS_TOKEN")
     if not access_token:
-        # access_token = os.getenv("GITHUB_TOKEN")
         raise Exception("A personal access token is required to proceed!")
     user = os.getenv("GITHUB_ACTOR")
     if user is None:
